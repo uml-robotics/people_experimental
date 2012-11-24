@@ -1,1 +1,43 @@
+# Build files
+msg_gen/
+srv_gen/
+**/src/*/msg/
+**/src/*/srv/
+**/src/*msgs
+**/**/src/*/msg/
+**/**/src/*/srv/
+**/**/src/*msgs
+build/
+doc/
+bin/
+lib/
+cmake_install.cmake
+_gtest_from_src/
+
+
+# Dynamic reconfigure
+docs/
+*.cfgc
+**/cfg/cpp/
+**/src/*/cfg/
+
+# Eclipse project
+.project
+.cproject
+.pydevproject
+.settings
+
+# Python
+*.pyc
+*.pkl
+
+
+# Temporary files
+*.swp
+*~
+
+# Mac os
+.DS_Store
+
+# Misc
 *.orig
