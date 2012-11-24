@@ -112,7 +112,7 @@ public:
 		} catch(...) {
 			ROS_WARN("TF exception spot 6.");
 		}
-		StampedTransform pose( btTransform(Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
+		StampedTransform pose( tf::Transform(Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
 		tfl_.setTransform(pose);
 
 		StatePosVel prior_sigma(Vector3(0.1,0.1,0.1), Vector3(0.0000001, 0.0000001, 0.0000001));
@@ -135,7 +135,7 @@ public:
 
 	void update(Stamped<Point> loc)
 	{
-		StampedTransform pose( btTransform(Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
+		StampedTransform pose( tf::Transform(Quaternion(0.0, 0.0, 0.0, 1.0), loc), loc.stamp_, id_, loc.frame_id_);
 		tfl_.setTransform(pose);
 
 		meas_time_ = loc.stamp_;
