@@ -29,8 +29,8 @@
 		<param name="acquisition_quality_threshold"    value="0.60"/>
 		
 		<!-- Paramter file for sound player -->
-		<rosparam file="$(find bk_configs)/common/vision/person_tracker_sounds.yaml"
-			command="load" ns="sounds"  />
+		<!--<rosparam file="$(find bk_configs)/common/vision/person_tracker_sounds.yaml"-->
+			<!--command="load" ns="sounds"  />-->
 			
 	</node>
 	
