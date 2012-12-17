@@ -1,17 +1,32 @@
-<!---->
 <launch>
+    <!-- Topic/frame parameters -->
+    <arg name="laser_scan_topic"  default="/scan"      />
+    <arg name="kinect_ns"         default="/camera"     />
+    <arg name="odom_frame"        default="/odom"      />
+    <arg name="base_link_frame"   default="/base_link" />
 
 	<!-- Leg detection -->
-	<include file="$(find leg_detector)/launch/leg_detector.launch"/>
+	<include file="$(find leg_detector)/launch/leg_detector.launch">
+        <arg name="laser_scan_topic" value="$(arg laser_scan_topic)" />
+        <arg name="odom_frame"       value="$(arg odom_frame)"       />
+    </include>
 	
 	<!-- Face detection -->
-	<include file="$(find bk_launch)/launch/face_detector.launch"/>
+	<include file="$(find bk_launch)/launch/face_detector.launch">
+        <arg name="kinect_ns" value="$(arg kinect_ns)"/>
+    </include>
 	
 	<!-- OpenNI body detection -->
-	<include file="$(find bk_launch)/launch/skeletal_tracker.launch"/>
+	<include file="$(find bk_launch)/launch/skeletal_tracker.launch">
+        <arg name="kinect_ns" value="$(arg kinect_ns)"/>
+    </include>
+
 	<include file="$(find bk_launch)/launch/similarity_plots.launch"/>
 	
 	<!-- Overall Kalman filter for tracking -->
-	<include file="$(find people_tracking_filter)/launch/filter.launch"/>
+	<include file="$(find people_tracking_filter)/launch/filter.launch">
+        <arg name="base_link_frame" value="$(arg base_link_frame)" />
+        <arg name="odom_frame"      value="$(arg odom_frame)"      />
+    </include>
 	
 </launch>

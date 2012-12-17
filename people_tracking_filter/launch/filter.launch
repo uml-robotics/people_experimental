@@ -1,6 +1,9 @@
 <!-- -->
 <launch>
 	
+    <arg name="odom_frame" default="/odom"/>
+    <arg name="base_link_frame" default="/base_link" />
+
 	<!-- Particle without velocity model covariances -->
 	<!--param name="people_tracker/sys_sigma_pos_x" value="0.2"/>
 	<param name="people_tracker/sys_sigma_pos_y" value="0.2"/>
@@ -20,7 +23,8 @@
 	<node pkg="people_tracking_filter" type="people_tracker" name="people_tracker" output="screen">
 		<remap from="goal_with_covariance" to="person_tracker/goal_with_covariance"/>
 		
-		<param name="fixed_frame"        type="string" value="odom"/>
+        <param name="base_link_frame"    type="string" value="$(arg base_link_frame)"/>
+		<param name="fixed_frame"        type="string" value="$(arg odom_frame)"/>
 		<param name="freq"                             value="15.0"/>
 		<param name="start_distance_min"               value="0.5"/>
 		<param name="reliability_threshold"            value="0.75"/>
@@ -28,10 +32,10 @@
 		<param name="max_pub_rate"                     value="10.0"/>
 		<param name="acquisition_quality_threshold"    value="0.60"/>
 		
-		<!-- Paramter file for sound player -->
-		<!--<rosparam file="$(find bk_configs)/common/vision/person_tracker_sounds.yaml"-->
-			<!--command="load" ns="sounds"  />-->
-			
+        <!-- Paramter file for sound player -->
+        <!--<rosparam file="$(find bk_configs)/common/vision/person_tracker_sounds.yaml"-->
+            <!--command="load" ns="sounds"  />-->
+
 	</node>
 	
 </launch>
