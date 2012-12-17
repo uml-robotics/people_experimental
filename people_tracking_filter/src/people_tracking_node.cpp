@@ -72,6 +72,7 @@ PeopleTrackingNode::PeopleTrackingNode(ros::NodeHandle nh) :
 	
 	// get parameters
 	ros::NodeHandle local_nh("~");
+    local_nh.param("base_link_frame"      , base_link_frame_      , string(""));
 	local_nh.param("fixed_frame"          , fixed_frame_          , string("default"));
 	local_nh.param("freq"                 , freq_                 , 1.0);
 	local_nh.param("start_distance_min"   , start_distance_min_   , 0.0);
@@ -180,7 +181,7 @@ void PeopleTrackingNode::callbackRcv(const people_msgs::PositionMeasurement::Con
 			tf::pointMsgToTF(message->pos, pt);
 			tf::Stamped<tf::Point> loc(pt, message->header.stamp, message->header.frame_id);
 			try {
-				robot_state_.transformPoint("base_link", loc, loc);
+				robot_state_.transformPoint(base_link_frame_, loc, loc);
 			}
 			catch( tf::TransformException e )
 			{

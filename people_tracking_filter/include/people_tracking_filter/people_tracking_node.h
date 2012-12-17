@@ -112,6 +112,7 @@ private:
 	double freq_, start_distance_min_, reliability_threshold_;
 	BFL::StatePosVel sys_sigma_;
 	std::string fixed_frame_;
+    std::string base_link_frame_;
 	boost::mutex filter_mutex_;
 	
 	sensor_msgs::PointCloud  meas_cloud_;
