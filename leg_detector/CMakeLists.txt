@@ -10,6 +10,7 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #set(ROS_BUILD_TYPE RelWithDebInfo)
 
 rosbuild_init()
+rosbuild_add_boost_directories()
 
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
@@ -33,9 +34,11 @@ rosbuild_add_executable(leg_detector
                        src/laser_processor.cpp
                        src/leg_detector.cpp 
                        src/calc_leg_features.cpp)
+rosbuild_link_boost(leg_detector signals)
 
 
 rosbuild_add_executable(train_leg_detector
                        src/laser_processor.cpp
                        src/train_leg_detector.cpp 
                        src/calc_leg_features.cpp)
+rosbuild_link_boost(train_leg_detector signals)

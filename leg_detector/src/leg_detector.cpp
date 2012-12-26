@@ -70,7 +70,8 @@ static const double max_track_jump_m         = 1.0;
 static const double max_meas_jump_m          = 0.75; // 1.0
 static const double leg_pair_separation_m    = 1.0;
 
-static string fixed_frame              = "odom";
+static string fixed_frame              = "/odom";
+static string laser_scan_topic         = "/scan";
 
 double planeDist(Stamped<Point> p1, Stamped<Point> p2)
 {
@@ -241,7 +242,7 @@ public:
 		connected_thresh_(0.06), 
 		feat_count_(0),
 		people_sub_(nh_,"people_tracker_filter",10),
-		laser_sub_(nh_,"scan",1),
+		laser_sub_(nh_,laser_scan_topic,1),
 		people_notifier_(people_sub_,tfl_,fixed_frame,10),
 		laser_notifier_(laser_sub_,tfl_,fixed_frame,1),
 		max_pub_rate_(0)
@@ -757,9 +758,13 @@ int main(int argc, char **argv)
 	ros::init(argc, argv,"laser_processor");
 	g_argc = argc;
 	g_argv = argv;
+
+    ros::NodeHandle pnh("~");
+    pnh.param("odom_frame", fixed_frame, string(""));
+    pnh.param("laser_scan_topic", laser_scan_topic, string(""));
+
 	ros::NodeHandle nh;
 
-    nh.param("odom_frame", fixed_frame, string(""));
 	LegDetector ld(nh);
 	ros::spin();
 	

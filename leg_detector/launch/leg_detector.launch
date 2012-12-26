@@ -5,6 +5,7 @@
 
     <node pkg="leg_detector" type="leg_detector" name="leg_detector" args="scan:=$(arg laser_scan_topic) $(find leg_detector)/config/trained_leg_detector.yaml" output="screen">
         <param name="odom_frame" type="string" value="$(arg odom_frame)"/>
+        <param name="laser_scan_topic" type="string" value="$(arg laser_scan_topic)"/>
         <param name="max_pub_rate" type="double" value="5.0"/>
         <param name="connected_thresh" type="double" value="0.06"/> <!-- Default 0.06 -->
     </node>

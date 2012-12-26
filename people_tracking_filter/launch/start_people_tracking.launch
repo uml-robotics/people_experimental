@@ -9,7 +9,7 @@
 	<include file="$(find leg_detector)/launch/leg_detector.launch">
         <arg name="laser_scan_topic" value="$(arg laser_scan_topic)" />
         <arg name="odom_frame"       value="$(arg odom_frame)"       />
-    </include>
+   </include>
 	
 	<!-- Face detection -->
 	<include file="$(find bk_launch)/launch/face_detector.launch">
