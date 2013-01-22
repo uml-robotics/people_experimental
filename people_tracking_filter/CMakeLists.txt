@@ -34,7 +34,6 @@ rosbuild_add_executable(people_tracker src/people_tracking_node.cpp)
 rosbuild_link_boost(people_tracker signals)
 
 target_link_libraries(people_tracker people_tracking_filter)
-target_link_libraries(people_tracker PTSounds)
 
 rosbuild_add_library(people_tracking_filter 
                      src/uniform_vector.cpp 

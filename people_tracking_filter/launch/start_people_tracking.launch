@@ -16,12 +16,14 @@
         <arg name="kinect_ns" value="$(arg kinect_ns)"/>
     </include>
 	
-	<!-- OpenNI body detection -->
+	<!-- OpenNI body detection >
 	<include file="$(find bk_launch)/launch/skeletal_tracker.launch">
         <arg name="kinect_ns" value="$(arg kinect_ns)"/>
     </include>
+    -->
 
-	<include file="$(find bk_launch)/launch/similarity_plots.launch"/>
+    <!-- Useless... Just shows similarity of the hue histogram graphically. -->
+	<!--include file="$(find bk_launch)/launch/similarity_plots.launch"/-->
 	
 	<!-- Overall Kalman filter for tracking -->
 	<include file="$(find people_tracking_filter)/launch/filter.launch">

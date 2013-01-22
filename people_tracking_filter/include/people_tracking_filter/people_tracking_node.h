@@ -46,9 +46,6 @@
 #include <tf/transform_listener.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 
-// Sound player
-#include <portal_sounds/PTSounds.h>
-
 // people tracking stuff
 #include "tracker.h"
 #include "detector_particle.h"
@@ -88,9 +85,8 @@ public:
 	
 private:
 
+    // ROS
 	ros::NodeHandle nh_;
-	
-	PTSounds::PTSoundPlayer sound_player_;
 	
 	ros::Publisher people_filter_pub_;
 	ros::Publisher people_filter_vis_pub_;
