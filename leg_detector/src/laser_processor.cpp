@@ -32,7 +32,7 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "laser_processor.h"
+#include "leg_detector/laser_processor.h"
 
 #include <stdexcept>
 
