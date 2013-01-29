@@ -2,11 +2,18 @@
 
 #include "leg_detector/saved_feature.h"
 
+using namespace saved_feature;
+using namespace tf;
+using namespace std;
+using namespace estimation;
+using namespace BFL;
+using namespace MatrixWrapper;
+
 // Constructor
 SavedFeature::SavedFeature(Stamped<Point> pos, TransformListener *tfl, string fixed_frame )
     : tfl_( tfl ),
     fixed_frame_( fixed_frame ),
-    sys_sigma_( Vector3(0.5,0.5,0.5), Vector3(1.0,1.0,1.0) ),
+    sys_sigma_( Vector3(0.05,0.05,0.05), Vector3(1.0,1.0,1.0) ),
     filter_( (boost::format("Leg %s")%next_id).str(), sys_sigma_ ),
     object_id_( "" ),
     init_time_( pos.stamp_ ),
@@ -76,9 +83,15 @@ double SavedFeature::getLifetime() const
 
 
 // Returns time of last filter update
-double SavedFeature::getTime() const
+ros::Time SavedFeature::getTime() const
 {
-    return time_.toSec();
+    return time_;
+} // end getter
+
+// Returns time of last measurement update
+ros::Time SavedFeature::getMeasTime() const
+{
+    return meas_time_;
 } // end getter
 
 
@@ -90,6 +103,11 @@ double SavedFeature::getDist() const
     return 10000.0;
 } // end getter
 
+// Returns associated leg ID
+string SavedFeature::getID() const
+{
+    return id_;
+} // end getter
 
 // Returns associated object ID
 string SavedFeature::getObjectID() const
@@ -106,13 +124,11 @@ Stamped<Point> SavedFeature::getPosition() const
 
 
 // Associates a leg to a tracker
-void SavedFeature::associateTracker( string object_id , float dist )
+void SavedFeature::associateTracker( string object_id )
 {
     // Set new object ID
     object_id_ = object_id;
 
-    // Set distance to the tracker
-    dist_to_tracker_ = dist;
 } // End associateTracker
 
 
@@ -123,6 +139,13 @@ void SavedFeature::disassociateTracker()
     object_id_ = "";
     dist_to_tracker_ = 10000.0;
 } // End disassociateTracker
+
+
+// Set the distance from the leg to it's associated tracker
+void SavedFeature::setDist( float dist )
+{
+    dist_to_tracker_ = dist;
+}
 
 
 // Get the latest estimate from the filter and store it in position

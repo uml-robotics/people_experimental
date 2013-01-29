@@ -141,7 +141,7 @@ namespace laser_processor
     void removeLessThan(uint32_t num);
 
     void splitConnected(float thresh);
-  };
-};
+  }; // End class definition
+}; // End laser_processor namespace
 
 #endif

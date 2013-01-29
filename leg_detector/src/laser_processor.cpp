@@ -36,9 +36,9 @@
 
 #include <stdexcept>
 
+using namespace laser_processor;
 using namespace ros;
 using namespace std;
-using namespace laser_processor;
 
 Sample* Sample::Extract(int ind, const sensor_msgs::LaserScan& scan)
 {

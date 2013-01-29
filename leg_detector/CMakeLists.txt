@@ -30,7 +30,12 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 
-rosbuild_add_executable(leg_detector src/leg_detector.cpp src/laser_processor.cpp src/saved_feature.cpp)
+rosbuild_add_executable(leg_detector
+                        src/main.cpp 
+                        src/leg_detector.cpp 
+                        src/calc_leg_features.cpp
+                        src/saved_feature.cpp
+                        src/laser_processor.cpp)
 rosbuild_link_boost(leg_detector signals)
 
 #rosbuild_add_executable(train_leg_detector

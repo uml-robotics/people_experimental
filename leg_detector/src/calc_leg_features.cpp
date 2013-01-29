@@ -32,7 +32,7 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "calc_leg_features.h"
+#include "leg_detector/calc_leg_features.h"
 
 #include "opencv/cxcore.h"
 #include "opencv/cv.h"

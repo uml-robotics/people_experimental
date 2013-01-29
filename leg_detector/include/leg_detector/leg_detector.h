@@ -38,7 +38,12 @@
 // ROS
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
+#include <tf/message_filter.h>
 #include <message_filters/subscriber.h>
+
+#include "opencv/cxcore.h"
+#include "opencv/cv.h" // TODO: What parts are necessary?
+#include "opencv/ml.h"
 
 // Non-standard ROS includes
 #include "laser_processor.h"
@@ -48,20 +53,13 @@
 #include "people_msgs/PositionMeasurement.h"
 #include "sensor_msgs/LaserScan.h"
 
-using namespace BFL;
-
-// TODO: Should remove scan dependency from here.
-// Only used for jump distance TODO: What does this line mean?
-// Description of function
-std::vector<float> calcLegFeatures(laser_processor::SampleSet *, const sensor_msgs::LaserScan &);
-
 // Class that keeps track of many legs, tries to associate them with trackers input by the filter,
 // and give updated measurements back to the filter for each tracker.
 class LegDetector
 {
 public:
     // Constructor
-    LegDetector( ros::NodeHandle );
+    LegDetector( ros::NodeHandle, std::string, std::string, double, double, int, char** );
 
     // ROS callbacks
     void filterCallback( const people_msgs::PositionMeasurement::ConstPtr & );
@@ -72,25 +70,24 @@ public:
     ros::Publisher measurements_pub_;
 
 private:
+    // ROS rate to make publishing rate stead
+    ros::Rate max_pub_rate_;
+
     // Node handles and transform listener
     ros::NodeHandle nh_;
     tf::TransformListener tfl_;
+    std::string fixed_frame_;
 
     // Current saved legs and a mutex to 
-    std::list<SavedFeature*> saved_features_;
+    laser_processor::ScanMask mask_; // TODO: This doesn't seem to be used correctly. Do testing on just this. For now, ignore this issue.
+    std::list<saved_feature::SavedFeature*> saved_features_;
     boost::mutex saved_mutex_;
 
-    laser_processor::ScanMask mask_; // TODO: This doesn't seem to be used correctly. Do testing on just this. For now, ignore this issue.
-    int mask_count_; // TODO: What is this variable for?.... Doesn't seem to be used.
-
-    CvRTrees forest; // TODO: What is this for?
+    CvRTrees forest_; // TODO: What is this for?
     
-    double connected_thresh_; // TODO: What is this for?
+    double connected_thresh_; // How close must laser scan measurements be to be considered connected
     int feat_count_; // TODO: What is this for?
-
     int feature_id_; // TODO: What is this for?
-
-    ros::Rate max_publish_rate_;
 
     // Subscribers
     message_filters::Subscriber< people_msgs::PositionMeasurement > filter_sub_;
@@ -98,6 +95,5 @@ private:
     tf::MessageFilter< people_msgs::PositionMeasurement > filter_notifier_;
     tf::MessageFilter< sensor_msgs::LaserScan > laser_notifier_;
 
-} // End LegDetector class
-
+}; // End LegDetector class
 #endif
