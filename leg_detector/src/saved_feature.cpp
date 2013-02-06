@@ -17,6 +17,7 @@ SavedFeature::SavedFeature(Stamped<Point> pos, TransformListener *tfl, string fi
     filter_( (boost::format("Leg %s")%next_id).str(), sys_sigma_ ),
     object_id_( "" ),
     init_time_( pos.stamp_ ),
+    meas_time_( pos.stamp_ ),
     time_( pos.stamp_ ),
     dist_to_tracker_( 10000.0 ) // Arbitrary large number
 {
@@ -123,6 +124,22 @@ Stamped<Point> SavedFeature::getPosition() const
 } // end getter
 
 
+// Returns latest velocity
+double SavedFeature::getVelocityMagnitude() const
+{
+    return velocity_magnitude_;
+} // end getter
+
+
+// Returns latest position after forcing an update on the filter
+Stamped<Point> SavedFeature::getUpdatedPosition()
+{
+    // Update the filter
+    updatePosition();
+    return getPosition();
+}
+
+
 // Associates a leg to a tracker
 void SavedFeature::associateTracker( string object_id )
 {
@@ -135,9 +152,8 @@ void SavedFeature::associateTracker( string object_id )
 // Disassociates a leg from any tracker it is currently associated to
 void SavedFeature::disassociateTracker()
 {
-    // Clear object ID and set distance to a high, arbitrary number
+    // Clear object ID
     object_id_ = "";
-    dist_to_tracker_ = 10000.0;
 } // End disassociateTracker
 
 
@@ -159,6 +175,7 @@ void SavedFeature::updatePosition()
     position_[0] = est.pos_[0];
     position_[1] = est.pos_[1];
     position_[2] = est.pos_[2];
+    velocity_magnitude_ = est.vel_.length();
     position_.stamp_ = time_;
     position_.frame_id_ = fixed_frame_;
 } // End updatePosition

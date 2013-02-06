@@ -42,10 +42,11 @@
 #include "people_tracking_filter/rgb.h"
 
 // Message includes
-#include "std_msgs/Header.h" // TODO: Necessary?
+#include "std_msgs/Header.h"
+#include "sensor_msgs/PointCloud.h"
 
 // C++ includes
-#include <algorithm> // TODO: Necessary?
+#include <algorithm>
 
 
 // Namespaces
@@ -62,13 +63,12 @@ using namespace MatrixWrapper;
 // Used to uniquely identify SavedFeature objects (tracked legs)
 int SavedFeature::next_id = 0;
 
-
 // Hardcoded constants... Be careful. Note: s for seconds, m for meters
-static const double no_observation_timeout_s = 0.5; // How long a leg will last without a measurement before it is deleted.
+static const double no_observation_timeout_s = 0.8; // How long a leg will last without a measurement before it is deleted.
 static const double max_second_leg_age_s     = 2.0; // Used to disregard old legs without ID's, because they are unlikely to be our tracker.
-static const double max_track_jump_m         = 1.0; // Max distance a leg can be from an input tracker and still update it.
-static const double max_meas_jump_m          = 0.75; // Max distance a measurement can be away from a leg and still be used to update it.
-static const double leg_pair_separation_m    = 1.0; // Max distance that should be between two legs associated with the same tracker.
+static const double max_track_jump_m         = 0.8; // Max distance a leg can be from an input tracker and still update it.
+static const double max_meas_jump_m          = 0.8; // Max distance a measurement can be away from a leg and still be used to update it.
+static const double leg_pair_separation_m    = 0.8; // Max distance that should be between two legs associated with the same tracker.
 
 
 // Helper function that calculates two-dimensional distance between two points
@@ -104,13 +104,13 @@ LegDetector::LegDetector(ros::NodeHandle nh, string fixed_frame, string laser_sc
     // advertise topics
     leg_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud>("kalman_filt_cloud",10);
     measurements_pub_ = nh_.advertise<people_msgs::PositionMeasurement>("people_tracker_measurements",1);
+    test_pub_ = nh_.advertise<sensor_msgs::PointCloud>("test_topic",100);
+    test_pub2_ = nh_.advertise<sensor_msgs::PointCloud>("test_topic2",100);
 
     filter_notifier_.registerCallback(boost::bind(&LegDetector::filterCallback, this, _1));
     filter_notifier_.setTolerance(ros::Duration(0.01));
     laser_notifier_.registerCallback(boost::bind(&LegDetector::laserCallback, this, _1));
     laser_notifier_.setTolerance(ros::Duration(0.01));
-
-    feature_id_ = 0;
 }
 
 
@@ -120,7 +120,7 @@ LegDetector::LegDetector(ros::NodeHandle nh, string fixed_frame, string laser_sc
 // the distance between them is not too large.                         
 void LegDetector::filterCallback(const people_msgs::PositionMeasurement::ConstPtr& people_meas)
 {
-    ROS_DEBUG("(in tracker callback) Received a tracker message.");
+    ROS_DEBUG("(in tracker callback) Received a tracker message from the filter.");
     
     // If there are no legs, return.
     if (saved_features_.empty()) {
@@ -136,7 +136,7 @@ void LegDetector::filterCallback(const people_msgs::PositionMeasurement::ConstPt
     Stamped<Point> dest_loc(pt, people_meas->header.stamp, people_meas->header.frame_id); // Holder for all transformed pts.
 
     //-------- Locked ---------- 
-    boost::mutex::scoped_lock lock(saved_mutex_);
+    //boost::mutex::scoped_lock lock(saved_mutex_);
 
     // Transform the input tracker measurement to fixed_frame
     try {
@@ -156,7 +156,7 @@ void LegDetector::filterCallback(const people_msgs::PositionMeasurement::ConstPt
     // If there are no legs with a matching ID and within the max dist, find a pair of legs with no ID that are close enough; ID them.
     // If all of the above cases fail, find a single close leg that is without an ID and assign the tracker's ID to it.
 
-    // For each leg, get the two-dimensinoal distance to the input tracker
+    // For each leg, get the two-dimensional distance to the tracker
     ROS_DEBUG("(in tracker callback) Legs currently being tracked:");
     for (it1 = begin; it1 != end; ++it1){
         (*it1)->setDist( planeDist(dest_loc, (*it1)->getPosition()) );
@@ -217,7 +217,7 @@ void LegDetector::filterCallback(const people_msgs::PositionMeasurement::ConstPt
             if ( dist_between_legs < leg_pair_separation_m ){
                 closest = it1;
                 closest_dist = (*it1)->getDist();
-            }
+            }                                                   
         }
 
         // If we found a close leg without an ID, set it's ID to match the input tracker.
@@ -240,7 +240,7 @@ void LegDetector::filterCallback(const people_msgs::PositionMeasurement::ConstPt
     closest_dist = max_meas_jump_m;
     closest_pair_dist = 2*max_meas_jump_m;
     for (it1 = begin, it2 = begin; it1 != end; ++it1){
-        // Only look at trackers without ids and that are not too far away.
+        // Only look at legs without IDs and that are not too far away.
         if ((*it1)->getObjectID() != "" || (*it1)->getDist() >= max_meas_jump_m )
             continue;
 
@@ -283,7 +283,7 @@ void LegDetector::filterCallback(const people_msgs::PositionMeasurement::ConstPt
         return;
     }
 
-    lock.unlock();
+    //lock.unlock();
     // -------- Locked ---------
 
     ROS_DEBUG("(in tracker callback) No legs could be matched to the input tracker by ID or by proximity");
@@ -301,8 +301,13 @@ void LegDetector::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 {
     // Ignore laser scans if they come too quickly. This keeps updates consistent.
     static ros::Time last_cb_time(0);
-    if( ros::Time::now() - last_cb_time < max_pub_rate_.expectedCycleTime() )
+    if( ros::Time::now() - last_cb_time < max_pub_rate_.expectedCycleTime() ){
+        //ROS_INFO("(in laser callback) Skipped this laser scan.");
         return;
+    }
+
+    //ROS_INFO("(in laser callback) ros::Time::now(): %f",ros::Time::now().toSec());
+    //ROS_INFO("(in laser callback) scan's time stamp: %f",scan->header.stamp.toSec());
 
     last_cb_time = ros::Time::now();
     max_pub_rate_.reset();
@@ -314,16 +319,54 @@ void LegDetector::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
     processor.splitConnected(connected_thresh_);
     processor.removeLessThan(3);
 
+    // ------- TESTING: Laser processor --------- //
+    // Get all clusters from processor and concatenate them into a ROS message to be displayed in Rviz
+
+    // ...
+    // Size calculation
+    int size = 0;
+    for ( list<SampleSet*>::iterator i = processor.getClusters().begin(); i != processor.getClusters().end(); i++ )
+        size += (*i)->size();
+
+    // Create a vector of points and store all of the points from each cluster in this vector
+    vector<geometry_msgs::Point32> test_output( size );
+    int count = 0;
+
+    // Get the points and store them
+    for ( list<SampleSet*>::iterator i = processor.getClusters().begin(); i != processor.getClusters().end(); i++ ) {
+        for ( SampleSet::iterator j = (*i)->begin(); j != (*i)->end(); j++ ) {
+
+            // Grab the data and shove it where it belongs.
+            test_output[count].x = (*j)->x;
+            test_output[count].y = (*j)->y;
+            test_output[count].z = 0.0;
+
+            count++;
+        }
+    }
+
+    // Publish the point cloud to be viewed in Rviz for testing
+    sensor_msgs::PointCloud  test_cloud; 
+    test_cloud.header.frame_id = scan->header.frame_id;
+    test_cloud.header.stamp = scan->header.stamp;
+    test_cloud.points  = test_output;
+    test_pub_.publish(test_cloud);
+
+    // -------- End testing laser processing --------
+
+
     CvMat* tmp_mat = cvCreateMat(1,feat_count_,CV_32FC1);
 
     // -------- Locked ------------
     boost::mutex::scoped_lock lock(saved_mutex_);
 
     // if a leg's measurement hasn't been updated in <no_observation_timeout> seconds: erase that leg
-    ros::Time purge = scan->header.stamp + ros::Duration().fromSec(-no_observation_timeout_s);
+    ros::Time purge = scan->header.stamp - ros::Duration(no_observation_timeout_s);
     list<SavedFeature*>::iterator sf_iter = saved_features_.begin();
     while (sf_iter != saved_features_.end()){
         if ((*sf_iter)->getMeasTime() < purge){
+            ROS_INFO("(in laser callback) ros::Time::now(): %f",ros::Time::now().toSec());
+            ROS_INFO("(in laser callback) leg's last measurement: %f",(*sf_iter)->getMeasTime().toSec());
             delete (*sf_iter);
             saved_features_.erase(sf_iter++);
         }
@@ -353,6 +396,43 @@ void LegDetector::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
     }
     ROS_DEBUG_STREAM(s);
 
+
+    // ------- TESTING: Candidate calculation --------- //
+    // Get all candidate clusters and concatenate them into a ROS message to be displayed in Rviz
+
+    // ...
+    // Size calculation
+    int size2 = 0;
+    for ( list<SampleSet*>::iterator i = candidates.begin(); i != candidates.end(); i++ )
+        size2 += (*i)->size();
+
+    // Create a vector of points and store all of the points from each cluster in this vector
+    vector<geometry_msgs::Point32> test_output2( size );
+    int count2 = 0;
+
+    // Get the points and store them
+    for ( list<SampleSet*>::iterator i = candidates.begin(); i != candidates.end(); i++ ) {
+        for ( SampleSet::iterator j = (*i)->begin(); j != (*i)->end(); j++ ) {
+
+            // Grab the data and shove it where it belongs.
+            test_output2[count2].x = (*j)->x;
+            test_output2[count2].y = (*j)->y;
+            test_output2[count2].z = 0.0;
+
+            count2++;
+        }
+    }
+
+    // Publish the point cloud to be viewed in Rviz for testing
+    sensor_msgs::PointCloud  test_cloud2; 
+    test_cloud2.header.frame_id = scan->header.frame_id;
+    test_cloud2.header.stamp = scan->header.stamp;
+    test_cloud2.points  = test_output2;
+    test_pub2_.publish(test_cloud2);
+
+    // -------- End testing candidate calculation --------
+
+
     // For each candidate, find the closest leg (within threshold) and add to the match list
     // If no close leg is found, start a new one
     multiset<MatchedFeature> matches;
@@ -368,8 +448,8 @@ void LegDetector::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
         list<SavedFeature*>::iterator closest = propagated.end();
         float closest_dist = max_track_jump_m;
         
+        // find the closest leg to each candidate
         for (list<SavedFeature*>::iterator pf_iter = propagated.begin(); pf_iter != propagated.end(); pf_iter++){
-            // find the closest leg to each candidate
             float dist = loc.distance((*pf_iter)->getPosition());
             if ( dist < closest_dist ){
                 closest = pf_iter;
@@ -458,30 +538,31 @@ void LegDetector::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 
     // Now that saved features have all been updated with laser values, output them!
     int i = 0;
-    map<string, SavedFeature*> legs_matched;
+    //map<string, SavedFeature*> legs_matched;
     for (list<SavedFeature*>::iterator sf_iter = saved_features_.begin(); sf_iter != saved_features_.end(); sf_iter++,i++){
         // reliability and covariance calculationsV
-        Stamped<Point> pos = (*sf_iter)->getPosition();
-        double reliability = 1.0;// fmin(1.0, fmax(0.2, est.vel_.length() / 0.5)); // Not used as reliability, just for covariance calculation.
+        Stamped<Point> pos = (*sf_iter)->getUpdatedPosition();
+        double vel_mag = (*sf_iter)->getVelocityMagnitude();
+        double reliability = fmin(1.0, fmax(0.2, vel_mag / 0.5)); // Not used as reliability, just for covariance calculation.
         double covariance = pow(0.3 / reliability,2.0); // TODO: Investigate this calculation a bit more to see if it's reasonable to use it.
 
         // point cloud output for each leg (will be outputed after this loop once the entire cloud has been constructed)
         filter_visualize[i].x = pos[0];
         filter_visualize[i].y = pos[1];
         filter_visualize[i].z = pos[2];
-        weights[i] = *(float*)&(rgb[min(998, max(1, (int)trunc( reliability*999.0 )))]);
+        weights[i] = *(float*)&(rgb[min(998, max(1, (int)trunc( reliability*999.0 )))]); // TODO: Investigate this calculation more.
 
         // If there are two leg's with the same ID (both have been associated with the same tracker), output their updated center to the filter.
         // If the current object has no ID, obviously skip over it.
         if ((*sf_iter)->getObjectID() == "")
             continue;
         // If the current leg matches the ID of a leg that has already been seen, output the average of their locations to the filter
-        map<string, SavedFeature*>::iterator first_leg;
-        if ( (first_leg = legs_matched.find((*sf_iter)->getObjectID())) != legs_matched.end() ){
+        //map<string, SavedFeature*>::iterator first_leg;
+        //if ( (first_leg = legs_matched.find((*sf_iter)->getObjectID())) != legs_matched.end() ){
             // Average posiiton of the first and second leg
-            Stamped<Point> first_pos = (first_leg->second)->getPosition();
-            float average_x = (pos[0] + first_pos[0])/2;
-            float average_y = (pos[1] + first_pos[1])/2;
+            //Stamped<Point> first_pos = (first_leg->second)->getUpdatedPosition();
+            //float average_x = (pos[0] + first_pos[0])/2;
+            //float average_y = (pos[1] + first_pos[1])/2;
 
             // output measurement to the filter to update this tracker's position
             people_msgs::PositionMeasurement output;
@@ -489,10 +570,10 @@ void LegDetector::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
             output.header.frame_id = fixed_frame_;
             output.name = "leg_detector";
             output.object_id = (*sf_iter)->getObjectID();
-            output.pos.x = average_x;
-            output.pos.y = average_y;
-            output.pos.z = 0.0;
-            output.reliability = 0.5;//reliability; // calculated reliability is given up and replaced with hard coded value. Kind of stupid, if you ask me.
+            output.pos.x = pos[0]; //average_x;
+            output.pos.y = pos[1]; //average_y;
+            output.pos.z = pos[2]; // 0.0;
+            output.reliability = 0.5;//reliability; // calculated reliability is given up and replaced with hard coded value.
             output.covariance[0] = covariance; // Doing the above comment causes only face detector to be able to create a new tracker, and that's all it's used for.
             output.covariance[1] = 0.0;
             output.covariance[2] = 0.0;
@@ -501,18 +582,18 @@ void LegDetector::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
             output.covariance[5] = 0.0;
             output.covariance[6] = 0.0;
             output.covariance[7] = 0.0;
-            output.covariance[8] = 0.0; // Variance for the z component is really high (unreliable) because we don't care about it, so we just put it to 0 before.
+            output.covariance[8] = 10000.0; // Variance for the z component is really high (unreliable) because we don't care about it, so we just put it to 0 before.
             output.initialization = 0; // initialization=1 is required to instantiate new trackers in the filter, so leg_detector is never allowed to do so because of this.
         
             measurements_pub_.publish(output);
             ROS_INFO_STREAM(boost::format("(in laser callback) Publishing new measurement for \"%s\", covariance=%.2f")%(*sf_iter)->getObjectID() %covariance );
 
             // Delete this ID from legs_matched so that it isn't accidentally republished
-            legs_matched.erase( first_leg );
-        }
+            //legs_matched.erase( first_leg );
+        //}
         // Otherwise, add this leg to the map and keep looking
-        else
-            legs_matched.insert( pair<string, SavedFeature*>((*sf_iter)->getObjectID(), *sf_iter) );
+        //else
+        //    legs_matched.insert( pair<string, SavedFeature*>((*sf_iter)->getObjectID(), *sf_iter) );
     }
 
     lock.unlock();

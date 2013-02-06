@@ -65,10 +65,6 @@ public:
     void filterCallback( const people_msgs::PositionMeasurement::ConstPtr & );
     void laserCallback( const sensor_msgs::LaserScan::ConstPtr & );
 
-    // Publishers
-    ros::Publisher leg_cloud_pub_;
-    ros::Publisher measurements_pub_;
-
 private:
     // ROS rate to make publishing rate stead
     ros::Rate max_pub_rate_;
@@ -79,21 +75,26 @@ private:
     std::string fixed_frame_;
 
     // Current saved legs and a mutex to 
-    laser_processor::ScanMask mask_; // TODO: This doesn't seem to be used correctly. Do testing on just this. For now, ignore this issue.
+    laser_processor::ScanMask mask_; // TODO: This doesn't seem to be used correctly. Do testing on just this. For now, ignore this issue. However, it needs to be fixed eventually.
     std::list<saved_feature::SavedFeature*> saved_features_;
     boost::mutex saved_mutex_;
 
     CvRTrees forest_; // TODO: What is this for?
     
     double connected_thresh_; // How close must laser scan measurements be to be considered connected
-    int feat_count_; // TODO: What is this for?
-    int feature_id_; // TODO: What is this for?
+    int feat_count_; // Number of features loaded from the config file used to setup the tracker.
 
     // Subscribers
     message_filters::Subscriber< people_msgs::PositionMeasurement > filter_sub_;
     message_filters::Subscriber< sensor_msgs::LaserScan > laser_sub_;
     tf::MessageFilter< people_msgs::PositionMeasurement > filter_notifier_;
     tf::MessageFilter< sensor_msgs::LaserScan > laser_notifier_;
+
+    // Publishers
+    ros::Publisher leg_cloud_pub_;
+    ros::Publisher measurements_pub_;
+    ros::Publisher test_pub_;
+    ros::Publisher test_pub2_;
 
 }; // End LegDetector class
 #endif

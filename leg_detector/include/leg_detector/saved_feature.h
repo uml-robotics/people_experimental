@@ -49,6 +49,8 @@ namespace saved_feature
         std::string getID() const;
         std::string getObjectID() const;
         tf::Stamped<tf::Point> getPosition() const;
+        double getVelocityMagnitude() const;
+        tf::Stamped<tf::Point> getUpdatedPosition();
 
         // Mutators for object_ID and distance to tracker
         void associateTracker( std::string );
@@ -56,8 +58,8 @@ namespace saved_feature
         void setDist( float );
 
     private:
-        tf::TransformListener* tfl_; // Transform listener to set up and update a transform to this leg's frame. TODO Is this even used? It may be extra overhead
-        std::string fixed_frame_;     // Used to transform all input points to this frame 
+        tf::TransformListener* tfl_; // Transform listener to set up and update a transform to this leg's frame.
+        std::string fixed_frame_;     // Used to transform all input points to this frame
 
         BFL::StatePosVel sys_sigma_; // Variance of the system
         estimation::TrackerKalman filter_; // Kalman filter that does all of the work
@@ -69,6 +71,7 @@ namespace saved_feature
         ros::Time time_;      // Time of last filter update
 
         tf::Stamped<tf::Point> position_; // Latest position estimated by the filter
+        double velocity_magnitude_; // Latest velocity estimated by the filter
         float dist_to_tracker_;   // Distance from it's associated tracker since the last update.
 
         void updatePosition(); // Private function that gets the latest estimate from the filter. 
