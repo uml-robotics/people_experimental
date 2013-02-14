@@ -33,7 +33,7 @@ SavedFeature::SavedFeature(Stamped<Point> pos, TransformListener *tfl, string fi
     }
     position_ = Stamped<Point>( pos );
 
-    // Create this leg's transform frame
+    // Create this leg's transform frame TODO: Is this ever necessary? It's done with every measurement update too. Is it ever used?
     StampedTransform pose( Transform( Quaternion(0.0,0.0,0.0,1.0), pos ), pos.stamp_, id_, pos.frame_id_ );
     tfl_->setTransform( pose );
 
@@ -56,13 +56,23 @@ void SavedFeature::propagate(const ros::Time time)
 // Update; Adds the new measurement to the filter for this leg.
 void SavedFeature::addMeasurement(const Stamped<Point> pos)
 {
+    // tmp_pos is needed since input pos is const
+    Stamped<Point> tmp_pos(pos);
+
+    try {
+        tfl_->transformPoint( fixed_frame_, tmp_pos, tmp_pos );
+    }
+    catch ( TransformException e ) {
+        ROS_WARN_STREAM( "(in SavedFeature constructor) Error transforming input to fixed_frame (2) - " << e.what() );
+    }
+
     // Update the transform frame
-    StampedTransform pose( Transform( Quaternion(0.0,0.0,0.0,1.0), pos ), pos.stamp_, id_, pos.frame_id_ );
+    StampedTransform pose( Transform( Quaternion(0.0,0.0,0.0,1.0), tmp_pos ), tmp_pos.stamp_, id_, tmp_pos.frame_id_ );
     tfl_->setTransform( pose );
 
     // Update times
-    meas_time_ = pos.stamp_;
-    time_ = pos.stamp_;
+    meas_time_ = tmp_pos.stamp_;
+    time_ = tmp_pos.stamp_;
 
     // Construct covariance matrix and send measurement to the filter
     SymmetricMatrix cov(3);
@@ -70,7 +80,7 @@ void SavedFeature::addMeasurement(const Stamped<Point> pos)
     cov(1,1) = 0.0025;
     cov(2,2) = 0.0025;
     cov(3,3) = 0.0025;
-    filter_.updateCorrection( pos, cov );
+    filter_.updateCorrection( tmp_pos, cov );
 
     updatePosition();
 } // End add_measurement
@@ -99,9 +109,7 @@ ros::Time SavedFeature::getMeasTime() const
 // Returns distance to the assosciated tracker
 double SavedFeature::getDist() const
 {
-    if ( object_id_ != "" )
-        return dist_to_tracker_;
-    return 10000.0;
+    return dist_to_tracker_;
 } // end getter
 
 // Returns associated leg ID
@@ -145,7 +153,6 @@ void SavedFeature::associateTracker( string object_id )
 {
     // Set new object ID
     object_id_ = object_id;
-
 } // End associateTracker
 
 
@@ -175,7 +182,9 @@ void SavedFeature::updatePosition()
     position_[0] = est.pos_[0];
     position_[1] = est.pos_[1];
     position_[2] = est.pos_[2];
-    velocity_magnitude_ = est.vel_.length();
     position_.stamp_ = time_;
     position_.frame_id_ = fixed_frame_;
+
+    // Update velocity magnitude
+    velocity_magnitude_ = est.vel_.length();
 } // End updatePosition

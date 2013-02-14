@@ -93,8 +93,6 @@ private:
     // Publishers
     ros::Publisher leg_cloud_pub_;
     ros::Publisher measurements_pub_;
-    ros::Publisher test_pub_;
-    ros::Publisher test_pub2_;
 
 }; // End LegDetector class
 #endif
